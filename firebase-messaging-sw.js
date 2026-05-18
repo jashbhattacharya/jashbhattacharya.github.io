@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js');
 
 const CACHE = 'life-tracker-v1';
-const URLS  = ['/life-tracker/', '/life-tracker/index.html', '/life-tracker/manifest.json', '/life-tracker/icon-192.png', '/life-tracker/icon-512.png'];
+const URLS  = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 // Cache on install
 self.addEventListener('install', e => {
@@ -25,7 +25,7 @@ self.addEventListener('fetch', e => {
 firebase.initializeApp({
   apiKey: "AIzaSyCW_u0QsqhhOdC_eHfbBMDOgUPDwv-J3w8",
   authDomain: "life-tracker-2da80.firebaseapp.com",
-  databaseURL: "https://life-tracker-2da80-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL: "https://-2da80-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "life-tracker-2da80",
   storageBucket: "life-tracker-2da80.firebasestorage.app",
   messagingSenderId: "1059030327669",
@@ -37,8 +37,8 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(payload.notification.title, {
     body: payload.notification.body,
-    icon: '/life-tracker/icon-192.png',
-    badge: '/life-tracker/icon-192.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [200, 100, 200],
     tag: 'life-tracker',
     renotify: true,
@@ -48,5 +48,5 @@ messaging.onBackgroundMessage(payload => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow('https://jashbhattacharya.github.io/life-tracker'));
+  e.waitUntil(clients.openWindow('https://jashbhattacharya.github.io/'));
 });

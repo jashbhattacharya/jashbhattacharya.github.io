@@ -8,7 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
-<link rel="manifest" href="/life-tracker/manifest.json"/>
+<link rel="manifest" href="/manifest.json"/>
 <meta name="theme-color" content="#0A0A0B"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -458,7 +458,7 @@ body {
 <button id="notif-btn" style="position:fixed;bottom:24px;left:18px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:999px;padding:11px 16px;font-size:12px;font-family:Syne,sans-serif;font-weight:600;cursor:pointer;z-index:200;letter-spacing:0.04em;display:flex;align-items:center;gap:6px;" onclick="requestNotifications()">🔔 ENABLE ALERTS</button>
 
 <script>
-const FC={apiKey:"AIzaSyCW_u0QsqhhOdC_eHfbBMDOgUPDwv-J3w8",authDomain:"life-tracker-2da80.firebaseapp.com",databaseURL:"https://life-tracker-2da80-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"life-tracker-2da80",storageBucket:"life-tracker-2da80.firebasestorage.app",messagingSenderId:"1059030327669",appId:"1:1059030327669:web:74f193ddf2decd14acf33c"};
+const FC={apiKey:"AIzaSyCW_u0QsqhhOdC_eHfbBMDOgUPDwv-J3w8",authDomain:"life-tracker-2da80.firebaseapp.com",databaseURL:"https://-2da80-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"life-tracker-2da80",storageBucket:"life-tracker-2da80.firebasestorage.app",messagingSenderId:"1059030327669",appId:"1:1059030327669:web:74f193ddf2decd14acf33c"};
 firebase.initializeApp(FC);
 const db=firebase.database();
 const DL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -706,7 +706,7 @@ boot();
 const VAPID_KEY = "BIKh60bp2ETbAjpMK-SBN6BYCA9xh5H2pJ7JXbLxebKPZHTiBoak7MrqgbWdKeadF6lm9g6WoYCvYjLz3CiYePg";
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("/life-tracker/firebase-messaging-sw.js")
+  navigator.serviceWorker.register("/firebase-messaging-sw.js")
     .then(reg=>console.log("SW registered"))
     .catch(err=>console.log("SW error", err));
 }
