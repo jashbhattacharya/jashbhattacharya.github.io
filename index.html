@@ -7,6 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
+<link rel="manifest" href="/life-tracker/manifest.json"/>
+<meta name="theme-color" content="#0A0A0B"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Life Tracker"/>
 <style>
 :root {
   --bg: #0A0A0B;
@@ -448,6 +454,7 @@ body {
 </div>
 
 <button class="fab" onclick="location.reload()" title="Refresh">↻</button>
+<button id="notif-btn" style="position:fixed;bottom:24px;left:18px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:999px;padding:11px 16px;font-size:12px;font-family:Syne,sans-serif;font-weight:600;cursor:pointer;z-index:200;letter-spacing:0.04em;display:flex;align-items:center;gap:6px;" onclick="requestNotifications()">🔔 ENABLE ALERTS</button>
 
 <script>
 const FC={apiKey:"AIzaSyCW_u0QsqhhOdC_eHfbBMDOgUPDwv-J3w8",authDomain:"life-tracker-2da80.firebaseapp.com",databaseURL:"https://life-tracker-2da80-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"life-tracker-2da80",storageBucket:"life-tracker-2da80.firebasestorage.app",messagingSenderId:"1059030327669",appId:"1:1059030327669:web:74f193ddf2decd14acf33c"};
@@ -693,6 +700,91 @@ function boot(){
   scheduleReset();tickNotice();
 }
 boot();
+
+// ── NOTIFICATIONS & PWA ──────────────────────────────────────────────────────
+const VAPID_KEY = "BIKh60bp2ETbAjpMK-SBN6BYCA9xh5H2pJ7JXbLxebKPZHTiBoak7MrqgbWdKeadF6lm9g6WoYCvYjLz3CiYePg";
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("/life-tracker/firebase-messaging-sw.js")
+    .then(reg=>console.log("SW registered"))
+    .catch(err=>console.log("SW error", err));
+}
+
+let fcm = null;
+try { fcm = firebase.messaging(); } catch(e) {}
+
+async function requestNotifications(){
+  try {
+    const permission = await Notification.requestPermission();
+    if(permission !== "granted"){ alert("Please enable notifications in browser settings."); return; }
+    if(fcm){
+      const token = await fcm.getToken({vapidKey: VAPID_KEY});
+      if(token) await db.ref("fcm_tokens/" + token.slice(0,20)).set({token, ts: Date.now()});
+    }
+    scheduleLocalNotifications();
+    updateNotifBtn(true);
+    showToast("Notifications enabled! ✓");
+  } catch(e) {
+    if(Notification.permission === "granted"){
+      scheduleLocalNotifications();
+      updateNotifBtn(true);
+      showToast("Reminders enabled! ✓");
+    }
+  }
+}
+
+function updateNotifBtn(on){
+  const b = document.getElementById("notif-btn");
+  if(!b) return;
+  b.innerHTML = on ? "🔔 ALERTS ON" : "🔔 ENABLE ALERTS";
+  b.style.background = on ? "var(--green-dim)" : "var(--bg2)";
+  b.style.color = on ? "var(--green)" : "var(--text2)";
+  b.style.borderColor = on ? "var(--green-dim)" : "var(--border2)";
+  if(on) b.onclick = null;
+}
+
+const REMINDERS = [
+  {h:9,  m:0,  title:"Good morning! 🌅",        body:"Time to start your morning routine"},
+  {h:9,  m:30, title:"Exercise time! 🏃",        body:"30–45 min workout — let's go"},
+  {h:10, m:30, title:"Deep work #1 🧠",          body:"Phone on DND — 90 min focus"},
+  {h:13, m:0,  title:"Lunch break 🥗",           body:"Eat well, step outside, no scrolling"},
+  {h:14, m:0,  title:"Deep work #2 🧠",          body:"Afternoon focus — 90 min"},
+  {h:17, m:0,  title:"LinkedIn time 💼",         body:"Write, engage, or draft your next post"},
+  {h:21, m:0,  title:"Reading time 📖",          body:"30+ min — book, article, or course"},
+  {h:23, m:30, title:"Wind-down time 🌙",        body:"Screens off in 30 min"},
+  {h:1,  m:0,  title:"Bedtime! 😴",             body:"Time to sleep — great day today!"}
+];
+
+function scheduleLocalNotifications(){
+  if(Notification.permission !== "granted") return;
+  REMINDERS.forEach(r => {
+    const now = new Date(), next = new Date();
+    next.setHours(r.h, r.m, 0, 0);
+    if(next <= now) next.setDate(next.getDate() + 1);
+    setTimeout(() => {
+      new Notification(r.title, {
+        body: r.body,
+        icon: "https://via.placeholder.com/192x192/7DDE6A/0A0A0B?text=LT",
+        tag: "lt-"+r.h+"-"+r.m,
+        renotify: true
+      });
+    }, next - now);
+  });
+}
+
+function showToast(msg){
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:13px;font-family:Syne,sans-serif;font-weight:600;z-index:999;white-space:nowrap;";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+if(Notification.permission === "granted"){
+  scheduleLocalNotifications();
+  updateNotifBtn(true);
+}
+
 </script>
 </body>
 </html>
