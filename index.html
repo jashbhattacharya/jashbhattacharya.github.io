@@ -668,16 +668,28 @@ function boot(){
   const now=new Date();
   document.getElementById("hdate").textContent=DL[now.getDay()].toUpperCase()+", "+now.getDate()+" "+MO[now.getMonth()].toUpperCase()+" "+now.getFullYear();
   setSync("busy","Connecting...");
+  let tasksLoaded=false;
   db.ref("tasks").on("value",snap=>{
-    TASKS=snap.exists()?snap.val():[];
-    if(!TASKS.length){TASKS=getDefaultTasks();db.ref("tasks").set(TASKS);}
-    renderTasks();
+    const newTasks=snap.exists()?snap.val():[];
+    if(!newTasks.length){TASKS=getDefaultTasks();db.ref("tasks").set(TASKS);renderTasks();tasksLoaded=true;}
+    else{
+      TASKS=newTasks;
+      if(!tasksLoaded){
+        // First load — also load today's checked state then render
+        db.ref("days/"+todayKey()).once("value").then(daySnap=>{
+          if(daySnap.exists()&&daySnap.val().date===todayKey())checked=daySnap.val().checked||[];
+          renderTasks();
+          tasksLoaded=true;
+        });
+      } else {
+        // Subsequent updates (e.g. task added/removed) — re-render preserving checked state
+        renderTasks();
+      }
+    }
     if(currentTab==="manage")renderManage();
     setSync("ok","Connected ✓");
   },err=>setSync("err","Error: "+err.message));
-  db.ref("days/"+todayKey()).once("value").then(snap=>{
-    if(snap.exists()&&snap.val().date===todayKey()){checked=snap.val().checked||[];updateUI();}
-  });
+
   scheduleReset();tickNotice();
 }
 boot();
