@@ -454,6 +454,7 @@ body {
 </div>
 
 <button class="fab" onclick="location.reload()" title="Refresh">↻</button>
+<button id="install-btn" onclick="installApp()" style="display:none;position:fixed;bottom:70px;left:18px;background:var(--blue-dim,#001020);color:var(--blue,#6B9FFF);border:1px solid var(--blue,#6B9FFF);border-radius:999px;padding:11px 16px;font-size:12px;font-family:Syne,sans-serif;font-weight:600;cursor:pointer;z-index:200;letter-spacing:0.04em;align-items:center;gap:6px;">📲 INSTALL APP</button>
 <button id="notif-btn" style="position:fixed;bottom:24px;left:18px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:999px;padding:11px 16px;font-size:12px;font-family:Syne,sans-serif;font-weight:600;cursor:pointer;z-index:200;letter-spacing:0.04em;display:flex;align-items:center;gap:6px;" onclick="requestNotifications()">🔔 ENABLE ALERTS</button>
 
 <script>
@@ -725,7 +726,43 @@ async function requestNotifications(){
     updateNotifBtn(true);
     showToast("Notifications enabled! ✓");
   } catch(e) {
-    if(Notification.permission === "granted"){
+    
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'none';
+  showToast('App installed! ✓');
+});
+
+async function installApp(){
+  if(!deferredPrompt){ 
+    showToast('Open in Chrome to install');
+    return; 
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if(outcome === 'accepted') showToast('Installing... ✓');
+  deferredPrompt = null;
+}
+
+// Check if already installed
+if(window.matchMedia('(display-mode: standalone)').matches){
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'none';
+}
+
+if(Notification.permission === "granted"){
       scheduleLocalNotifications();
       updateNotifBtn(true);
       showToast("Reminders enabled! ✓");
@@ -784,6 +821,42 @@ function showToast(msg){
   t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:13px;font-family:Syne,sans-serif;font-weight:600;z-index:999;white-space:nowrap;";
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+
+
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'none';
+  showToast('App installed! ✓');
+});
+
+async function installApp(){
+  if(!deferredPrompt){ 
+    showToast('Open in Chrome to install');
+    return; 
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if(outcome === 'accepted') showToast('Installing... ✓');
+  deferredPrompt = null;
+}
+
+// Check if already installed
+if(window.matchMedia('(display-mode: standalone)').matches){
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'none';
 }
 
 if(Notification.permission === "granted"){

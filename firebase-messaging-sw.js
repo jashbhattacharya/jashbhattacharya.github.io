@@ -1,6 +1,27 @@
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js');
 
+const CACHE = 'life-tracker-v1';
+const URLS  = ['/life-tracker/', '/life-tracker/index.html', '/life-tracker/manifest.json', '/life-tracker/icon-192.png', '/life-tracker/icon-512.png'];
+
+// Cache on install
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+
+// Network first, cache fallback
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    fetch(e.request).catch(() => caches.match(e.request))
+  );
+});
+
+// Firebase messaging
 firebase.initializeApp({
   apiKey: "AIzaSyCW_u0QsqhhOdC_eHfbBMDOgUPDwv-J3w8",
   authDomain: "life-tracker-2da80.firebaseapp.com",
@@ -13,24 +34,19 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages
-messaging.onBackgroundMessage(function(payload) {
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: '/life-tracker/icon.png',
-    badge: '/life-tracker/icon.png',
+messaging.onBackgroundMessage(payload => {
+  self.registration.showNotification(payload.notification.title, {
+    body: payload.notification.body,
+    icon: '/life-tracker/icon-192.png',
+    badge: '/life-tracker/icon-192.png',
     vibrate: [200, 100, 200],
-    tag: 'life-tracker-reminder',
+    tag: 'life-tracker',
     renotify: true,
     actions: [{ action: 'open', title: 'Open Tracker' }]
   });
 });
 
-// Handle notification click
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  event.waitUntil(
-    clients.openWindow('https://jashbhattacharya.github.io/life-tracker')
-  );
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow('https://jashbhattacharya.github.io/life-tracker'));
 });
