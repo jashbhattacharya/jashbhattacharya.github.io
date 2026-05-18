@@ -744,15 +744,18 @@ function updateNotifBtn(on){
 }
 
 const REMINDERS = [
-  {h:9,  m:0,  title:"Good morning! 🌅",        body:"Time to start your morning routine"},
-  {h:9,  m:30, title:"Exercise time! 🏃",        body:"30–45 min workout — let's go"},
-  {h:10, m:30, title:"Deep work #1 🧠",          body:"Phone on DND — 90 min focus"},
-  {h:13, m:0,  title:"Lunch break 🥗",           body:"Eat well, step outside, no scrolling"},
-  {h:14, m:0,  title:"Deep work #2 🧠",          body:"Afternoon focus — 90 min"},
-  {h:17, m:0,  title:"LinkedIn time 💼",         body:"Write, engage, or draft your next post"},
-  {h:21, m:0,  title:"Reading time 📖",          body:"30+ min — book, article, or course"},
-  {h:23, m:30, title:"Wind-down time 🌙",        body:"Screens off in 30 min"},
-  {h:1,  m:0,  title:"Bedtime! 😴",             body:"Time to sleep — great day today!"}
+  {h:9,  m:0,  title:"Good morning! 🌅",        body:"Time to start your morning routine",  taskIds:["m1","m2"]},
+  {h:9,  m:30, title:"Exercise time! 🏃",        body:"30–45 min workout — let's go",        taskIds:["m3"]},
+  {h:10, m:15, title:"Healthy breakfast 🥗",     body:"No junk, eat mindfully",              taskIds:["m4"]},
+  {h:10, m:30, title:"Deep work #1 🧠",          body:"Phone on DND — 90 min focus",         taskIds:["f1"]},
+  {h:13, m:0,  title:"Lunch break 🥗",           body:"Eat well, step outside, no scrolling",taskIds:["f2"]},
+  {h:14, m:0,  title:"Deep work #2 🧠",          body:"Afternoon focus — 90 min",            taskIds:["f3"]},
+  {h:17, m:0,  title:"LinkedIn time 💼",         body:"Write, engage, or draft your post",   taskIds:["c1"]},
+  {h:21, m:0,  title:"Reading time 📖",          body:"30+ min — book, article, or course",  taskIds:["c2"]},
+  {h:9,  m:0,  title:"Stay hydrated 🫗",         body:"Have you had your water today?",       taskIds:["h1","h3"]},
+  {h:23, m:30, title:"Wind-down time 🌙",        body:"Screens off in 30 min",               taskIds:["n1"]},
+  {h:23, m:45, title:"Time to reflect ✍️",       body:"3 wins · 1 thing to improve",         taskIds:["n2"]},
+  {h:1,  m:0,  title:"Bedtime! 😴",             body:"Time to sleep — great day today!",     taskIds:["n3"]}
 ];
 
 function scheduleLocalNotifications(){
@@ -762,6 +765,9 @@ function scheduleLocalNotifications(){
     next.setHours(r.h, r.m, 0, 0);
     if(next <= now) next.setDate(next.getDate() + 1);
     setTimeout(() => {
+      // Only notify if the linked task is NOT already checked
+      const tasksDone = r.taskIds ? r.taskIds.every(id => checked.includes(id)) : false;
+      if(tasksDone) return; // skip — already completed
       new Notification(r.title, {
         body: r.body,
         icon: "https://via.placeholder.com/192x192/7DDE6A/0A0A0B?text=LT",
