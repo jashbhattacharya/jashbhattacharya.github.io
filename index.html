@@ -148,7 +148,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <div class="add-form">
     <div class="form-row">
       <input class="finput" id="new-title" placeholder="Task name" maxlength="60"/>
-      <input class="finput" id="new-time" placeholder="Time e.g. 9:00 AM" maxlength="20" style="max-width:110px"/>
+      <input class="finput" id="new-time" type="time" style="max-width:110px"/>
     </div>
     <div class="form-row">
       <input class="finput" id="new-note" placeholder="Note (optional)" maxlength="80"/>
@@ -164,10 +164,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <option value="custom">+ New section...</option>
       </select>
       <input class="finput" id="new-custom-section" placeholder="Section name" style="display:none;max-width:150px"/>
-      <select class="fsel" id="new-type">
-        <option value="recurring">🔁 Daily</option>
+      <select class="fsel" id="new-type" onchange="toggleWeekday()">
         <option value="once">1️⃣ One-time</option>
+        <option value="daily">🔁 Daily</option>
+        <option value="weekdays">💼 Weekdays (Mon–Fri)</option>
+        <option value="weekends">🌅 Weekends (Sat–Sun)</option>
+        <option value="weekly">📅 Weekly</option>
+        <option value="monthly">🗓️ Monthly</option>
       </select>
+      <select class="fsel" id="new-weekday" style="display:none">
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+        <option value="0">Sunday</option>
+      </select>
+      <input class="finput" id="new-monthday" type="number" min="1" max="31" placeholder="Day e.g. 1" style="display:none;max-width:90px"/>
       <select class="fsel" id="new-icon">
         <option>✅</option><option>💧</option><option>🏃</option><option>🧠</option>
         <option>📖</option><option>💼</option><option>🍎</option><option>🌙</option>
@@ -204,14 +218,26 @@ let TASKS=[],checked=[],saveTimer=null,currentTab='today';
 function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function allItems(){return TASKS.flatMap(s=>s.items||[]);}
-function total(){return allItems().filter(i=>i.type!=='once'||i.addedDate===todayKey()).length;}
+function isVisibleToday(item){
+  const today=todayKey();
+  const dow=new Date().getDay();
+  const dom=new Date().getDate();
+  if(item.type==="once") return item.addedDate===today;
+  if(item.type==="daily"||item.type==="recurring") return true;
+  if(item.type==="weekdays") return dow>=1&&dow<=5;
+  if(item.type==="weekends") return dow===0||dow===6;
+  if(item.type==="weekly") return item.weekday===dow;
+  if(item.type==="monthly") return item.monthday===dom;
+  return true;
+}
+function total(){return allItems().filter(isVisibleToday).length;}
 function setSync(s,m){document.getElementById("dot").className="dot "+s;document.getElementById("stxt").textContent=m;}
 
 function renderTasks(){
   const list=document.getElementById("task-list");
   list.innerHTML="";
   const today=todayKey();
-  const vis=TASKS.map(s=>({...s,items:(s.items||[]).filter(i=>i.type!=='once'||i.addedDate===today)})).filter(s=>s.items.length>0);
+  const vis=TASKS.map(s=>({...s,items:(s.items||[]).filter(isVisibleToday)})).filter(s=>s.items.length>0);
   if(!vis.length){list.innerHTML='<div class="empty">No tasks yet!</div>';}
   else{
     vis.forEach(sec=>{
@@ -222,7 +248,9 @@ function renderTasks(){
         div.className="item"+(checked.includes(item.id)?" done":"");
         div.dataset.id=item.id;
         div.onclick=()=>togItem(item.id,div);
-        div.innerHTML=`<div class="chk">✓</div><div class="ico" style="background:${item.bg||'#1A1A1F'}">${item.icon||'✅'}</div><div class="itext"><div class="ititle">${item.title}<span class="ibadge ${item.type==='once'?'once':'recurring'}">${item.type==='once'?'TODAY':'DAILY'}</span></div><div class="inote">${item.note||''}</div></div><div class="itime">${item.time||''}</div>`;
+        const typeLabels={"once":"TODAY","daily":"DAILY","recurring":"DAILY","weekdays":"MON–FRI","weekends":"WEEKEND","weekly":"WEEKLY","monthly":"MONTHLY"};
+        const badgeClass=item.type==="once"?"once":"recurring";
+        div.innerHTML=`<div class="chk">✓</div><div class="ico" style="background:${item.bg||'#1A1A1F'}">${item.icon||'✅'}</div><div class="itext"><div class="ititle">${item.title}<span class="ibadge ${badgeClass}">${typeLabels[item.type]||'DAILY'}</span></div><div class="inote">${item.note||''}</div></div><div class="itime">${item.time||''}</div>`;
         card.appendChild(div);
       });
       list.appendChild(card);
@@ -263,27 +291,44 @@ function saveDay(){
 
 function resetDay(){if(!confirm("Reset today?"))return;saveDay();checked=[];renderTasks();saveDay();}
 
+function toggleWeekday(){
+  const type=document.getElementById("new-type").value;
+  document.getElementById("new-weekday").style.display=type==="weekly"?"":"none";
+  document.getElementById("new-monthday").style.display=type==="monthly"?"":"none";
+}
+
 document.getElementById("new-section").onchange=function(){
   document.getElementById("new-custom-section").style.display=this.value==="custom"?"":"none";
 };
+
+function fmt12(t){
+  if(!t)return"";
+  const[h,m]=t.split(":").map(Number);
+  const ampm=h>=12?"PM":"AM";
+  const h12=h%12||12;
+  return h12+":"+(m<10?"0"+m:m)+" "+ampm;
+}
 
 function addTask(){
   const title=document.getElementById("new-title").value.trim();
   if(!title){alert("Enter a task name");return;}
   const note=document.getElementById("new-note").value.trim();
-  const time=document.getElementById("new-time").value.trim();
+  const timeRaw=document.getElementById("new-time").value;
+  const time=fmt12(timeRaw);
   const icon=document.getElementById("new-icon").value;
   const type=document.getElementById("new-type").value;
+  const weekday=type==="weekly"?parseInt(document.getElementById("new-weekday").value):null;
+  const monthday=type==="monthly"?parseInt(document.getElementById("new-monthday").value):null;
   let section=document.getElementById("new-section").value;
   if(section==="custom")section=document.getElementById("new-custom-section").value.trim()||"Other";
   const bgs={"Morning — 9:00 AM":"#0D1200","Focus Blocks":"#001020","Content & Learning":"#001510","Health — All Day":"#0A1A08","Wind-down — 11:00 PM":"#120820"};
-  const newItem={id:uid(),title,note,time,icon,bg:bgs[section]||"#141418",type,addedDate:todayKey()};
+  const newItem={id:uid(),title,note,time,icon,bg:bgs[section]||"#141418",type,weekday,monthday,addedDate:todayKey()};
   const idx=TASKS.findIndex(s=>s.section===section);
   if(idx>=0)TASKS[idx].items.push(newItem);
   else TASKS.push({section,items:[newItem]});
   db.ref("tasks").set(TASKS).then(()=>{
     setSync("ok","Task added ✓");
-    ["new-title","new-note","new-time"].forEach(id=>document.getElementById(id).value="");
+    ["new-title","new-note","new-time"].forEach(id=>document.getElementById(id).value="");document.getElementById("new-weekday").style.display="none";document.getElementById("new-monthday").style.display="none";document.getElementById("new-type").value="daily";
     renderTasks();renderManage();
   });
 }
@@ -301,7 +346,9 @@ function renderManage(){
   TASKS.forEach(sec=>{
     html+=`<div class="sec-header">${sec.section}</div>`;
     (sec.items||[]).forEach(item=>{
-      html+=`<div class="mtask-row"><div class="ico" style="background:${item.bg||'#141418'};width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${item.icon||'✅'}</div><div class="mtask-info"><div class="mtask-title">${item.title} <span class="ibadge ${item.type==='once'?'once':'recurring'}">${item.type==='once'?'TODAY':'DAILY'}</span></div><div class="mtask-meta">${[item.time,item.note].filter(Boolean).join(' · ')}</div></div><button class="del-btn" onclick="deleteTask('${item.id}')">REMOVE</button></div>`;
+      const tl2={"once":"TODAY","daily":"DAILY","recurring":"DAILY","weekdays":"MON–FRI","weekends":"WEEKEND","weekly":"WEEKLY","monthly":"MONTHLY"};
+      const bc2=item.type==="once"?"once":"recurring";
+      html+=`<div class="mtask-row"><div class="ico" style="background:${item.bg||'#141418'};width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${item.icon||'✅'}</div><div class="mtask-info"><div class="mtask-title">${item.title} <span class="ibadge ${bc2}">${tl2[item.type]||'DAILY'}</span></div><div class="mtask-meta">${[item.time,item.note].filter(Boolean).join(' · ')}</div></div><button class="del-btn" onclick="deleteTask('${item.id}')">REMOVE</button></div>`;
     });
   });
   el.innerHTML=html;
